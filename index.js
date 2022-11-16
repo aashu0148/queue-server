@@ -34,6 +34,26 @@ cron.schedule("*/5 * * * *", () => {
       );
     }
   }
+
+  for (let i = 0; i < finished.length; ++i) {
+    const item = finished[i];
+    const lastUpdate = new Date(item.updatedAt);
+    if (lastUpdate.getTime() < new Date().getTime() - 5 * 60 * 1000) {
+      // request is in finished for 5 mins - no one asked for this response yet, trash this request
+      finished.splice(i, 1);
+      --i;
+      console.log(
+        `🚩 request with id: ${
+          item.id
+        } is trashed as it is in finished queue from ${lastUpdate.toLocaleString(
+          "en-in",
+          { timeZone: "Asia/Kolkata" }
+        )} and created on ${new Date(item.createdAt).toLocaleString("en-in", {
+          timeZone: "Asia/Kolkata",
+        })}`
+      );
+    }
+  }
 });
 
 app.get("/", (_req, res) => {
