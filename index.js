@@ -23,8 +23,8 @@ cron.schedule("*/5 * * * *", () => {
       ongoing.splice(i, 1);
       --i;
       console.log(
-        `🚩 request with id: ${
-          item.id
+        `🚩 request with id: ${item.id} and url: ${
+          item.url
         } is trashed as it is in ongoing from ${lastUpdate.toLocaleString(
           "en-in",
           { timeZone: "Asia/Kolkata" }
@@ -43,8 +43,8 @@ cron.schedule("*/5 * * * *", () => {
       finished.splice(i, 1);
       --i;
       console.log(
-        `🚩 request with id: ${
-          item.id
+        `🚩 request with id: ${item.id} and url: ${
+          item.url
         } is trashed as it is in finished queue from ${lastUpdate.toLocaleString(
           "en-in",
           { timeZone: "Asia/Kolkata" }
@@ -222,15 +222,18 @@ app.post("/submit", (req, res) => {
 });
 
 app.get("/queues", (req, res) => {
-  const tQ = todo.map((item) => ({ url: item.url, createdAt: item.createdAt }));
-  const oQ = ongoing.map((item) => ({
+  const mapFunc = (item) => ({
     url: item.url,
-    createdAt: item.createdAt,
-  }));
-  const fQ = finished.map((item) => ({
-    url: item.url,
-    createdAt: item.createdAt,
-  }));
+    createdAt: new Date(item.createdAt).toLocaleString("en-in", {
+      timeZone: "Asia/Kolkata",
+    }),
+    updatedAt: new Date(item.updatedAt).toLocaleString("en-in", {
+      timeZone: "Asia/Kolkata",
+    }),
+  });
+  const tQ = todo.map(mapFunc);
+  const oQ = ongoing.map(mapFunc);
+  const fQ = finished.map(mapFunc);
 
   res.status(200).json({
     success: true,
