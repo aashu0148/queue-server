@@ -1,5 +1,6 @@
 const express = require("express");
 const cors = require("cors");
+const cron = require("node-cron");
 
 const app = express();
 
@@ -10,6 +11,30 @@ app.use(express.urlencoded({ extended: true }));
 const todo = [];
 const ongoing = [];
 const finished = [];
+
+cron.schedule("*/5 * * * *", () => {
+  // running task every 5 mins
+
+  for (let i = 0; i < ongoing.length; ++i) {
+    const item = ongoing[i];
+    const lastUpdate = new Date(item.updatedAt);
+    if (lastUpdate.getTime() < new Date().getTime() - 5 * 60 * 1000) {
+      // request is in ongoing for 5 mins - no response received, trash this request
+      ongoing.splice(i, 1);
+      --i;
+      console.log(
+        `🚩 request with id: ${
+          item.id
+        } is trashed as it is in ongoing from ${lastUpdate.toLocaleString(
+          "en-in",
+          { timeZone: "Asia/Kolkata" }
+        )} and created on ${new Date(item.createdAt).toLocaleString("en-in", {
+          timeZone: "Asia/Kolkata",
+        })}`
+      );
+    }
+  }
+});
 
 app.get("/", (_req, res) => {
   res.status(200).json({ message: "Hey" });
@@ -34,6 +59,7 @@ app.post("/new", (req, res) => {
     url: urlToReq,
     type,
     createdAt: new Date(),
+    updatedAt: new Date(),
   };
 
   const index = todo.findIndex((item) => item.id == id);
@@ -102,7 +128,10 @@ app.get("/check-result/:id", (req, res) => {
 });
 
 app.get("/consume", (req, res) => {
-  console.log("🐣 Got consume call at - ", new Date().toLocaleString());
+  console.log(
+    "🐣 Got consume call at - ",
+    new Date().toLocaleString("en-in", { timeZone: "Asia/Kolkata" })
+  );
   if (todo.length == 0) {
     res.status(422).json({
       success: false,
@@ -113,7 +142,7 @@ app.get("/consume", (req, res) => {
 
   const firstTodo = todo[0];
   todo.splice(0, 1);
-  ongoing.push(firstTodo);
+  ongoing.push({ ...firstTodo, updatedAt: new Date() });
 
   res.status(200).json({
     success: true,
@@ -123,7 +152,10 @@ app.get("/consume", (req, res) => {
 });
 
 app.post("/submit", (req, res) => {
-  console.log("✅ Submitting call as on - ", new Date().toLocaleString());
+  console.log(
+    "✅ Submitting call as on - ",
+    new Date().toLocaleString("en-in", { timeZone: "Asia/Kolkata" })
+  );
   const { result, id, url } = req.body;
 
   if (!result || !url || !id) {
@@ -149,7 +181,7 @@ app.post("/submit", (req, res) => {
   ongoing.splice(ongoingIndex, 1);
 
   if (!req.body.completed) {
-    todo.push(ongoingReq);
+    todo.push({ ...ongoingReq, updatedAt: new Date() });
     res.status(200).json({
       success: true,
       message: "Response recorded",
@@ -160,6 +192,7 @@ app.post("/submit", (req, res) => {
   finished.push({
     ...ongoingReq,
     ...req.body,
+    updatedAt: new Date(),
   });
 
   res.status(200).json({
